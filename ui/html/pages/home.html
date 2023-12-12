@@ -1,18 +1,17 @@
-{{define "base"}}
 <!doctype html>
-<html lang="'en">
+<html lang='en'>
     <head>
-        <meta charset='utf-8'>
-        <title>{{template "title" .}} - Snippetbox</title>
+        <meta charset="utf-8">
+        {{define "title"}}Home{{end}}
     </head>
     <body>
         <header>
-            <h1><a href='/'>Snippetbox</a></h1>
+            <h1> <a href='/'>Snippetbox</a></h1>
         </header>
-        <main>
-            {{template "main"  .}}
-        </main>
-        <footer>Powered by <a href='https://golang.org/'>Go</a></footer>
+        {{define "main"}}
+            <h2>Latest Snippets</h2>
+            <p>There's nothing to see here yet!</p>
+        {{end}}
+        <footer> Power by <a href='https://golang.org/'>Go</a></footer>
     </body>
 </html>
-{{end}}
