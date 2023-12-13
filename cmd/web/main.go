@@ -2,9 +2,14 @@ package main
 
 import (
 	"flag"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 )
+
+type application struct {
+	logger *slog.Logger
+}
 
 func main() {
 	// Define what port the web server will run on
@@ -12,6 +17,13 @@ func main() {
 
 	// Parse the command-line flag
 	flag.Parse()
+
+	// Use the slog.New() function to initalise a new structured logger to write to the stream
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	app := &application{
+		logger: logger,
+	}
 
 	mux := http.NewServeMux()
 
@@ -21,13 +33,16 @@ func main() {
 	// Use the mux.Handle() to register the file server as a handler for all URL paths within "/static/"
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
-	mux.HandleFunc("/", home)
-	mux.HandleFunc("/snippet/view", snippetView)
-	mux.HandleFunc("/snippet/create", snippetCreate)
+	mux.HandleFunc("/", app.home)
+	mux.HandleFunc("/snippet/view", app.snippetView)
+	mux.HandleFunc("/snippet/create", app.snippetCreate)
 
-	log.Print("Starting server on", *addr)
+	logger.Info("starting server on", "addr", *addr)
 
 	// Pass the addr pointer to the http.ListenAndServe()
 	err := http.ListenAndServe(*addr, mux)
-	log.Fatal(err)
+
+	// Logs any error message returned by http.ListenAndServe()
+	logger.Error(err.Error())
+	os.Exit(1)
 }
