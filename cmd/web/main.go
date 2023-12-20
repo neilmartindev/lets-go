@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,8 +15,9 @@ import (
 
 // Add snippets field to application stuct, makes SnippetModel available to our handlers
 type application struct {
-	logger   *slog.Logger
-	snippets *models.SnippetModel
+	logger        *slog.Logger
+	snippets      *models.SnippetModel
+	templateCache map[string]*template.Template
 }
 
 func main() {
@@ -36,30 +38,19 @@ func main() {
 	}
 
 	defer db.Close()
-
+	// Initialize a new template cache...
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	// And add it to the application dependencies.
 	app := &application{
 		logger:   logger,
-		snippets: &models.SnippetModel{DB: db},
+		snippets: &models.SnippetModel{DB: db}, templateCache: templateCache,
 	}
-
-	mux := http.NewServeMux()
-
-	// Create a file server which servers files out of the /static/ directory
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
-
-	// Use the mux.Handle() to register the file server as a handler for all URL paths within "/static/"
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
-
-	mux.HandleFunc("/", app.home)
-	mux.HandleFunc("/snippet/view", app.snippetView)
-	mux.HandleFunc("/snippet/create", app.snippetCreate)
-
-	logger.Info("starting server on", "addr", *addr)
-
-	// Pass the addr pointer to the http.ListenAndServe()
+	logger.Info("starting server", "addr", *addr)
 	err = http.ListenAndServe(*addr, app.routes())
-
-	// Logs any error message returned by http.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
 }
